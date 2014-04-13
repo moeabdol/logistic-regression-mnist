@@ -44,9 +44,8 @@ validate_model = theano.function(inputs=[index],
 
 # model to show misclassified examples
 misclassified_model = theano.function(inputs=[index],
-		outputs=classifier.errors(y),
-		givens={x: test_set_x[index: (index + 1)],
-			y: test_set_y[index: (index + 1)]})
+		outputs=classifier.y_pred,
+		givens={x: test_set_x[index: (index + 1)]})
 
 # compute the gradient of cost with respect to theta = (W, b)
 g_W = T.grad(cost=cost, wrt=classifier.W)
@@ -81,23 +80,16 @@ def test():
 
 def show_misclassified():
 	for i in xrange(n_test_batches * batch_size):
-		error = misclassified_model(i)
-		if error == 1:
+		image = test_set_x[i].eval()
+		label = test_set_y[i].eval()
+		prediction = misclassified_model(i)[0]
+		if prediction != label:
 			print 'misclassified example found in test set at index %i' %i
-			image = test_set_x[i].eval()
-			label = test_set_y[i].eval()
-
-			z = T.vector('z')
-			classifier.p_y_given_x = T.nnet.softmax(T.dot(z, classifier.W) + classifier.b)
-			classifier.y_pred = T.argmax(classifier.p_y_given_x, axis=1)
-			misclassified_label = theano.function(inputs=[z], outputs=classifier.y_pred)
-			mis_label = misclassified_label(image)
-
 			# show actual image
 			image = image.reshape(28, 28)
 			plt.imshow(image, cmap=cm.gray)
 			plt.xlabel('Actual ' + str(label))
-			plt.ylabel('Prediction ' + str(mis_label[0]))
+			plt.ylabel('Prediction ' + str(prediction))
 			plt.show()
 
 
